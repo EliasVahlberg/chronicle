@@ -1,0 +1,16 @@
+[package]
+name = "chronicle"
+version = "0.1.0"
+edition = "2024"
+description = "Event-centric narrative knowledge graphs with temporal verification"
+license = "MIT"
+repository = "https://github.com/EliasVahlberg/chronicle"
+keywords = ["narrative", "knowledge-graph", "world-building", "temporal", "lore"]
+categories = ["data-structures", "game-development"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+ron = "0.8"
+petgraph = { version = "0.8", features = ["serde-1", "stable_graph"] }
+allen-intervals = "0.1"
+thiserror = "2"
