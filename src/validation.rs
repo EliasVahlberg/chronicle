@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use allen_intervals::{Interval, NonEmpty, Precedes};
+use allen_intervals::{Interval, Meets, NonEmpty, Precedes};
 use petgraph::Direction;
 
 use crate::graph::{Chronicle, parse_references};
@@ -164,6 +164,11 @@ fn to_interval(ts: &TimeSpan) -> Option<NonEmpty<Interval<i32>>> {
     Interval { start: ts.start, end: ts.end + 1 }.try_into().ok()
 }
 
+/// True if interval `a` ends strictly before `b` starts (precedes or meets in Allen's algebra).
+fn strictly_before(a: &NonEmpty<Interval<i32>>, b: &NonEmpty<Interval<i32>>) -> bool {
+    a.precedes(b) || a.meets(b)
+}
+
 fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
     for nx in chronicle.graph.node_indices() {
         if let Entity::Event(event) = &chronicle.graph[nx] {
@@ -176,7 +181,7 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                     && let Some(lifespan) = &actor.lifespan
                     && let Some(life_iv) = to_interval(lifespan)
                 {
-                    if event_iv.precedes(&life_iv) {
+                    if strictly_before(&event_iv, &life_iv) {
                         report.errors.push(ValidationError::TemporalViolation {
                             entity_id: actor.id.clone(),
                             event_id: event.id.clone(),
@@ -187,7 +192,7 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                             ),
                         });
                     }
-                    if life_iv.precedes(&event_iv) {
+                    if strictly_before(&life_iv, &event_iv) {
                         report.errors.push(ValidationError::TemporalViolation {
                             entity_id: actor.id.clone(),
                             event_id: event.id.clone(),
@@ -206,7 +211,7 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                 if let Some(&cause_nx) = chronicle.index.get(cause_id)
                     && let Entity::Event(cause_event) = &chronicle.graph[cause_nx]
                     && let Some(cause_iv) = to_interval(&cause_event.time_span)
-                    && event_iv.precedes(&cause_iv)
+                    && strictly_before(&event_iv, &cause_iv)
                 {
                     report.errors.push(ValidationError::TemporalViolation {
                         entity_id: event.id.clone(),
@@ -239,7 +244,7 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
                     if *entity_id == p.actor
                         && config.terminal_statuses.contains(status)
                         && let Some(change_iv) = to_interval(change_time)
-                        && change_iv.precedes(&event_iv)
+                        && strictly_before(&change_iv, &event_iv)
                     {
                         report.errors.push(ValidationError::StateViolation {
                             entity_id: p.actor.clone(),
@@ -262,7 +267,7 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
                     if entity_id == loc.as_str()
                         && config.terminal_statuses.contains(status)
                         && let Some(change_iv) = to_interval(change_time)
-                        && change_iv.precedes(&event_iv)
+                        && strictly_before(&change_iv, &event_iv)
                     {
                         report.errors.push(ValidationError::StateViolation {
                             entity_id: loc.clone(),
@@ -380,7 +385,7 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                 && let Some(lifespan) = &actor.lifespan
                 && let Some(life_iv) = to_interval(lifespan)
             {
-                if event_iv.precedes(&life_iv) {
+                if strictly_before(&event_iv, &life_iv) {
                     errors.push(ValidationError::TemporalViolation {
                         entity_id: actor.id.clone(),
                         event_id: event.id.clone(),
@@ -391,7 +396,7 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                         ),
                     });
                 }
-                if life_iv.precedes(&event_iv) {
+                if strictly_before(&life_iv, &event_iv) {
                     errors.push(ValidationError::TemporalViolation {
                         entity_id: actor.id.clone(),
                         event_id: event.id.clone(),
@@ -410,7 +415,7 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
             if let Some(&cause_nx) = chronicle.index.get(cause_id.as_str())
                 && let Entity::Event(cause_event) = &chronicle.graph[cause_nx]
                 && let Some(cause_iv) = to_interval(&cause_event.time_span)
-                && event_iv.precedes(&cause_iv)
+                && strictly_before(&event_iv, &cause_iv)
             {
                 errors.push(ValidationError::TemporalViolation {
                     entity_id: event.id.clone(),
@@ -432,7 +437,7 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                 if *entity_id == p.actor
                     && chronicle.config.terminal_statuses.contains(status)
                     && let Some(change_iv) = to_interval(change_time)
-                    && change_iv.precedes(&event_iv)
+                    && strictly_before(&change_iv, &event_iv)
                 {
                     errors.push(ValidationError::StateViolation {
                         entity_id: p.actor.clone(),
@@ -454,7 +459,7 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                 if entity_id == loc.as_str()
                     && chronicle.config.terminal_statuses.contains(status)
                     && let Some(change_iv) = to_interval(change_time)
-                    && change_iv.precedes(&event_iv)
+                    && strictly_before(&change_iv, &event_iv)
                 {
                     errors.push(ValidationError::StateViolation {
                         entity_id: loc.clone(),
