@@ -1,0 +1,43 @@
+[
+    (
+        id: "kaine_durgan",
+        name: "Commander Kaine Durgan",
+        type: Character,
+        status: Active,
+        affiliations: ["iron_covenant"],
+        description: "Iron Covenant commander. Led the Siege of Silica.",
+    ),
+    (
+        id: "brother_halix",
+        name: "Brother Halix",
+        type: Character,
+        status: Captured,
+        status_since_event: Some("battle_of_broken_glass"),
+        affiliations: ["mirror_order"],
+        description: "Orthodox Monk leader. Body transformed by deliberate storm exposure.",
+    ),
+    (
+        id: "saint_matthias",
+        name: "Brother Matthias / Saint Matthias",
+        type: Character,
+        status: Transformed,
+        status_since_event: Some("revelation_of_matthias"),
+        affiliations: ["mirror_order", "synthesis_seekers"],
+        description: "First to interface with an Archive terminal. Half-crystallized. Founded the Synthesis Seekers.",
+    ),
+    (
+        id: "ressa_vane",
+        name: "Engineer Forewoman Ressa Vane",
+        type: Character,
+        status: Active,
+        affiliations: ["sand_engineers"],
+        description: "Led the Engineer force at the Battle of Broken Glass.",
+    ),
+    (
+        id: "jorik_vane",
+        name: "Historian Jorik Vane",
+        type: Character,
+        status: Active,
+        description: "Historian who compiled the Schism Wars account from survivor testimonies and Archive records.",
+    ),
+]

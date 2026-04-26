@@ -238,3 +238,52 @@ pub struct Account {
 fn default_status() -> Status {
     Status::Active
 }
+
+// ── Graph Node / Edge Enums ────────────────────────────────
+
+/// A node in the chronicle graph.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Entity {
+    Actor(Actor),
+    Place(Place),
+    Event(Event),
+    Concept(Concept),
+    Account(Account),
+}
+
+impl Entity {
+    pub fn id(&self) -> &str {
+        match self {
+            Entity::Actor(a) => &a.id,
+            Entity::Place(p) => &p.id,
+            Entity::Event(e) => &e.id,
+            Entity::Concept(c) => &c.id,
+            Entity::Account(a) => &a.id,
+        }
+    }
+}
+
+/// An edge in the chronicle graph.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Relationship {
+    /// Actor → Event
+    ParticipatedIn { role: Role, sentiment: Sentiment },
+    /// Event → Place
+    OccurredAt,
+    /// Event → Event (effect → cause)
+    CausedBy,
+    /// Event → affected Entity
+    HasStateChange { change: StateChange },
+    /// Actor → Actor (member → faction)
+    AffiliatedWith,
+    /// Concept → Event
+    OriginatedFrom,
+    /// Account → Event
+    AccountOf,
+    /// Account → Actor (source)
+    AuthoredBy,
+    /// Account → any Entity (from {entity_id} refs in text)
+    Mentions,
+    /// Place → Place (child → parent region)
+    LocatedIn,
+}

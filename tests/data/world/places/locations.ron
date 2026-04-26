@@ -1,0 +1,27 @@
+[
+    (
+        id: "silica",
+        name: "Silica",
+        type: Settlement,
+        status: Destroyed,
+        status_since_event: Some("siege_of_silica"),
+        region: Some("central_steppe"),
+        description: "Former trade hub and neutral ground. Destroyed by Iron Covenant sonic resonance.",
+    ),
+    (
+        id: "havens_rest",
+        name: "Haven's Rest",
+        type: Settlement,
+        status: Evacuated,
+        status_since_event: Some("battle_of_broken_glass"),
+        region: Some("central_steppe"),
+        description: "Settlement where both Monks and Engineers had major outposts.",
+    ),
+    (
+        id: "central_steppe",
+        name: "The Central Steppe",
+        type: Region,
+        status: Active,
+        description: "Central region of the salt flats.",
+    ),
+]

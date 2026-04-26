@@ -1,0 +1,30 @@
+[
+    (
+        id: "iron_covenant",
+        name: "The Iron Covenant",
+        type: Faction,
+        status: Active,
+        description: "Military faction dedicated to preserving human purity. Anti-adaptation extremists.",
+    ),
+    (
+        id: "mirror_order",
+        name: "The Mirror Order (Orthodox)",
+        type: Faction,
+        status: Active,
+        description: "Orthodox faction of Mirror Monks. Reject Archive revelations as demonic lies.",
+    ),
+    (
+        id: "synthesis_seekers",
+        name: "The Synthesis Seekers",
+        type: Faction,
+        status: Active,
+        description: "Believe science and spirituality are two faces of the same truth.",
+    ),
+    (
+        id: "sand_engineers",
+        name: "The Sand-Engineers",
+        type: Faction,
+        status: Active,
+        description: "Maintain infrastructure. Vindicated by Archive revelations.",
+    ),
+]

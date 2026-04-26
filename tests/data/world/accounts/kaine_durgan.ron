@@ -1,0 +1,9 @@
+[
+    (
+        id: "kaine_durgan_siege_journal",
+        source: "kaine_durgan",
+        fidelity: Biased,
+        event_refs: ["siege_of_silica"],
+        text: "We established a Null-Field perimeter around {silica} at dawn. The {mirror_order} inside panicked. Their scripture failed them. We demanded surrender. They answered with focused sunlight from the central tower. On day 4, a Class 4 Glass Storm hit the Null-Field and dissolved into rain. We denied them their god. On day 12 we breached the southern gate. What we found in the sanctuary was disturbing. They were breeding them. We burned {silica}. Not with fire — with sonic resonance that shattered every structure into dust. The {mirror_order} call it a massacre. We call it sanitation.",
+    ),
+]
