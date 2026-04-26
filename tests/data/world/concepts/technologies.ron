@@ -1,0 +1,9 @@
+[
+    (
+        id: "null_field_technology",
+        name: "Null Field Generators",
+        type: Technology,
+        origin_event: Some("battle_of_broken_glass"),
+        description: "Devices that disrupt quantum coherence in a localized area, neutralizing adaptations.",
+    ),
+]

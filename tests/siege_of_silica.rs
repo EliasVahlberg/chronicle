@@ -12,8 +12,8 @@ fn load() -> Chronicle {
 #[test]
 fn load_siege_of_silica() {
     let c = load();
-    // 4 factions + 5 characters + 3 places + 5 events + 1 account = 18 nodes
-    assert_eq!(c.graph.node_count(), 18);
+    // 4 factions + 5 characters + 3 places + 5 events + 1 account + 1 concept = 19 nodes
+    assert_eq!(c.graph.node_count(), 19);
     assert!(c.index.contains_key("kaine_durgan"));
     assert!(c.index.contains_key("siege_of_silica"));
     assert!(c.index.contains_key("silica"));
@@ -278,4 +278,19 @@ fn query_wrong_type_returns_none() {
     assert!(c.actor("silica").is_none());
     // kaine_durgan is an Actor, not an Event
     assert!(c.event("kaine_durgan").is_none());
+}
+
+// ── Concept queries ────────────────────────────────────────
+
+#[test]
+fn concept_loads_and_validates() {
+    let c = load();
+    assert!(c.index.contains_key("null_field_technology"));
+    // origin_event reference should resolve (no validation errors for it)
+    let report = c.validate();
+    let concept_errors: Vec<_> = report.errors.iter().filter(|e| {
+        matches!(e, chronicle::validation::ValidationError::DanglingReference { source_id, .. }
+            if source_id == "null_field_technology")
+    }).collect();
+    assert!(concept_errors.is_empty());
 }
