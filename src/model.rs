@@ -20,7 +20,7 @@ pub struct TimeSpan {
 // ── Status ─────────────────────────────────────────────────
 
 /// Current state of an entity, potentially changed by events.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Status {
     Active,
     Dead,
@@ -237,6 +237,23 @@ pub struct Account {
 
 fn default_status() -> Status {
     Status::Active
+}
+
+// ── Validation Config ──────────────────────────────────────
+
+/// Policy configuration for validation rules.
+#[derive(Debug, Clone)]
+pub struct ValidationConfig {
+    /// Statuses that prevent an entity from participating in future events.
+    pub terminal_statuses: std::collections::HashSet<Status>,
+}
+
+impl Default for ValidationConfig {
+    fn default() -> Self {
+        Self {
+            terminal_statuses: [Status::Dead, Status::Destroyed, Status::Dissolved].into(),
+        }
+    }
 }
 
 // ── Graph Node / Edge Enums ────────────────────────────────

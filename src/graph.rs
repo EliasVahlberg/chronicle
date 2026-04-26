@@ -8,28 +8,36 @@ use petgraph::stable_graph::{NodeIndex, StableGraph};
 
 use crate::error::ChronicleError;
 use crate::model::*;
-use crate::validation::{ValidationReport, validate};
+use crate::validation::{ValidationReport, ValidationError, validate, can_add_event};
 
 /// The core chronicle graph.
 pub struct Chronicle {
     pub graph: StableGraph<Entity, Relationship>,
     pub index: HashMap<String, NodeIndex>,
+    pub config: ValidationConfig,
 }
 
 impl Chronicle {
-    /// Load all RON files from a directory, build the graph, and return it.
+    /// Load all RON files from a directory, build the graph with default config.
     pub fn from_directory(path: &Path) -> Result<Self, ChronicleError> {
+        Self::from_directory_with_config(path, ValidationConfig::default())
+    }
+
+    /// Load all RON files from a directory with custom validation config.
+    pub fn from_directory_with_config(
+        path: &Path,
+        config: ValidationConfig,
+    ) -> Result<Self, ChronicleError> {
         let mut graph = StableGraph::new();
         let mut index = HashMap::new();
 
-        // Load entities from subdirectories
         load_dir::<Actor>(path, "actors", &mut graph, &mut index)?;
         load_dir::<Place>(path, "places", &mut graph, &mut index)?;
         load_dir::<Event>(path, "events", &mut graph, &mut index)?;
         load_dir::<Concept>(path, "concepts", &mut graph, &mut index)?;
         load_dir::<Account>(path, "accounts", &mut graph, &mut index)?;
 
-        let mut chronicle = Self { graph, index };
+        let mut chronicle = Self { graph, index, config };
         chronicle.build_edges();
         Ok(chronicle)
     }
@@ -37,6 +45,11 @@ impl Chronicle {
     /// Validate the graph and return a report.
     pub fn validate(&self) -> ValidationReport {
         validate(self)
+    }
+
+    /// Check whether a proposed event is consistent with the existing graph.
+    pub fn can_add_event(&self, event: &Event) -> Result<(), Vec<ValidationError>> {
+        can_add_event(self, event)
     }
 
     /// Build all edges from the entity data already in the graph.
