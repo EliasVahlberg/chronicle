@@ -12,8 +12,8 @@ fn load() -> Chronicle {
 #[test]
 fn load_siege_of_silica() {
     let c = load();
-    // 4 factions + 5 characters + 3 places + 5 events + 1 account + 1 concept = 19 nodes
-    assert_eq!(c.graph.node_count(), 19);
+    // 4 factions + 5 characters + 3 places + 5 events + 2 accounts + 1 concept = 20 nodes
+    assert_eq!(c.graph.node_count(), 20);
     assert!(c.index.contains_key("kaine_durgan"));
     assert!(c.index.contains_key("siege_of_silica"));
     assert!(c.index.contains_key("silica"));
@@ -237,24 +237,24 @@ fn mentions_silica() {
     // "What accounts mention silica?"
     let c = load();
     let accounts = c.mentions("silica");
-    assert_eq!(accounts.len(), 1);
-    assert_eq!(accounts[0].id, "kaine_durgan_siege_journal");
+    assert_eq!(accounts.len(), 2); // kaine + jorik both mention silica
 }
 
 #[test]
 fn mentions_mirror_order() {
     let c = load();
     let accounts = c.mentions("mirror_order");
-    assert_eq!(accounts.len(), 1);
-    assert_eq!(accounts[0].fidelity, Fidelity::Biased);
+    assert_eq!(accounts.len(), 2); // kaine + jorik both mention mirror_order
 }
 
 #[test]
 fn accounts_of_siege() {
     let c = load();
     let accounts = c.accounts_of("siege_of_silica");
-    assert_eq!(accounts.len(), 1);
-    assert_eq!(accounts[0].source, "kaine_durgan");
+    assert_eq!(accounts.len(), 2); // kaine (Biased) + jorik (Partial)
+    let sources: Vec<&str> = accounts.iter().map(|a| a.source.as_str()).collect();
+    assert!(sources.contains(&"kaine_durgan"));
+    assert!(sources.contains(&"jorik_vane"));
 }
 
 // ── Nonexistent entity queries return None ─────────────────

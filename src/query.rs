@@ -87,6 +87,22 @@ impl Chronicle {
         })
         .collect()
     }
+
+    /// All accounts authored by a given source.
+    pub fn accounts_by(&self, source_id: &str) -> Vec<&Account> {
+        let Some(&source_nx) = self.index.get(source_id) else { return vec![] };
+        let mut seen = HashSet::new();
+        self.neighbors_by_edge(source_nx, Direction::Incoming, |r| {
+            matches!(r, Relationship::AuthoredBy)
+        })
+        .iter()
+        .filter(|&&nx| seen.insert(nx))
+        .filter_map(|&nx| match &self.graph[nx] {
+            Entity::Account(a) => Some(a),
+            _ => None,
+        })
+        .collect()
+    }
 }
 
 // ── ActorQuery ─────────────────────────────────────────────
