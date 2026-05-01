@@ -1,6 +1,6 @@
 [package]
 name = "chronicle-graph"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Event-centric narrative knowledge graphs with temporal verification"
 license = "MIT"
