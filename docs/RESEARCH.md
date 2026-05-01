@@ -97,7 +97,7 @@ allen-intervals = "0.1"
 thiserror = "2"
 ```
 
-Minimal. No async, no database, no network, no heavy deps.
+Minimal. No async, no database, no network, no heavy deps. ~1,900 lines of Rust.
 
 ## 6. Open Questions Resolved
 

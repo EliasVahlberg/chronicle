@@ -11,15 +11,15 @@ A Rust crate that loads authored narrative content into a typed, event-centric k
 The core operation: load a set of RON files defining entities, events, relationships, and narrative text with embedded references. Build an in-memory graph. Validate temporal, spatial, and referential consistency. Answer queries.
 
 ```rust
-let graph = NarrativeGraph::load("world/")?;       // load + validate
-let report = graph.validate();                       // consistency report
+let graph = Chronicle::from_directory("world/".as_ref())?;
+let report = graph.validate();
 
-// Traversal queries
-let contacts = graph.actor("brother_qon").interactions();
-let chain = graph.event("schism_wars").causal_chain();
+// Typed queries
+let contacts = graph.actor("brother_qon").unwrap().interactions();
+let chain = graph.event("schism_wars").unwrap().causal_chain();
 
 // Verification queries
-let ok = graph.can_add(Event { actor: "kael", place: "silica_citadel", time: 847, .. })?;
+let ok = graph.can_add_event(&proposed_event)?;
 ```
 
 ## What It Doesn't Do
@@ -43,7 +43,9 @@ Adapted from CIDOC CRM (simplified for game use — see [PROPOSAL.md](PROPOSAL.m
 | Event | Battles, discoveries, deaths, migrations | id, name, type, time_span, cause, participants, location |
 | Concept | Religions, technologies, artifacts, laws | id, name, type, origin_event |
 
-TimePeriod (named eras spanning multiple events) is deferred to after Phase 1. Events carry their own `time_span`.
+TimePeriod (named eras spanning multiple events) is deferred. Events carry their own `time_span`.
+
+**Note:** The crate is published as `chronicle-graph` on crates.io (`cargo add chronicle-graph`). The library name remains `chronicle` for imports (`use chronicle::graph::Chronicle`).
 
 ### Embedded References in Narrative Text
 
@@ -178,7 +180,7 @@ graph.subgraph_filtered("schism_wars", depth: 2, types: &[Actor, Place]) // filt
 
 ### Verification
 ```rust
-graph.can_add(&proposed_event)                       // would this be consistent?
+graph.can_add_event(&proposed_event)                 // would this be consistent?
 graph.validate()                                     // full consistency report
 ```
 
@@ -186,6 +188,7 @@ graph.validate()                                     // full consistency report
 ```rust
 graph.mentions("silica_citadel")                     // all narrative passages referencing this entity
 graph.accounts_of("siege_of_silica")                 // all subjective accounts, with fidelity
+graph.accounts_by("kaine_durgan")                    // all accounts authored by this source
 ```
 
 ## File Organization
