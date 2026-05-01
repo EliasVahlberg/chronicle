@@ -1,9 +1,9 @@
 //! Boundary-condition tests for validation edge cases (issue #2).
 
-use std::path::Path;
 use chronicle::graph::Chronicle;
 use chronicle::model::*;
 use chronicle::validation::ValidationError;
+use std::path::Path;
 
 fn load() -> Chronicle {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/world");
@@ -62,8 +62,10 @@ fn siege_of_silica_pattern_is_valid() {
     let silica_violations: Vec<_> = report.errors.iter().filter(|e| {
         matches!(e, ValidationError::StateViolation { entity_id, .. } if entity_id == "silica")
     }).collect();
-    assert!(silica_violations.is_empty(),
-        "siege_of_silica destroying silica during the event should not be a state violation");
+    assert!(
+        silica_violations.is_empty(),
+        "siege_of_silica destroying silica during the event should not be a state violation"
+    );
 }
 
 // ── Overlapping timespans with causal ordering ─────────────
@@ -74,12 +76,18 @@ fn overlapping_cause_and_effect_is_valid() {
     // revelation_of_matthias (15-15) causes great_divide (15-15) — same year
     // This is already in the data and should be valid
     let report = c.validate();
-    let causal_violations: Vec<_> = report.errors.iter().filter(|e| {
-        matches!(e, ValidationError::TemporalViolation { entity_id, event_id, .. }
+    let causal_violations: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| {
+            matches!(e, ValidationError::TemporalViolation { entity_id, event_id, .. }
             if entity_id == "great_divide" && event_id == "revelation_of_matthias")
-    }).collect();
-    assert!(causal_violations.is_empty(),
-        "same-year cause and effect should not be a temporal violation");
+        })
+        .collect();
+    assert!(
+        causal_violations.is_empty(),
+        "same-year cause and effect should not be a temporal violation"
+    );
 }
 
 #[test]
@@ -112,11 +120,15 @@ fn actor_in_multiple_roles_across_events_is_valid() {
     // mirror_order participates in 4 events with different roles — should all be fine
     let c = load();
     let report = c.validate();
-    let mirror_violations: Vec<_> = report.errors.iter().filter(|e| {
-        matches!(e, ValidationError::StateViolation { entity_id, .. }
+    let mirror_violations: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| {
+            matches!(e, ValidationError::StateViolation { entity_id, .. }
             | ValidationError::TemporalViolation { entity_id, .. }
             if entity_id == "mirror_order")
-    }).collect();
+        })
+        .collect();
     assert!(mirror_violations.is_empty());
 }
 

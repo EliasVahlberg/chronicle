@@ -1,6 +1,6 @@
-use std::path::Path;
 use chronicle::graph::Chronicle;
 use chronicle::validation::{ValidationError, ValidationWarning};
+use std::path::Path;
 
 fn data_path(scenario: &str) -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -19,7 +19,10 @@ fn catches_dangling_reference() {
         matches!(e, ValidationError::DanglingReference { target_id, .. } if target_id == "nonexistent_actor")
     }).collect();
 
-    assert!(!dangling.is_empty(), "should catch dangling reference to nonexistent_actor");
+    assert!(
+        !dangling.is_empty(),
+        "should catch dangling reference to nonexistent_actor"
+    );
 }
 
 // ── Temporal violation (dead actor participates later) ──────
@@ -29,12 +32,19 @@ fn catches_state_violation_dead_actor() {
     let c = Chronicle::from_directory(&data_path("temporal_violation")).unwrap();
     let report = c.validate();
 
-    let violations: Vec<_> = report.errors.iter().filter(|e| {
-        matches!(e, ValidationError::StateViolation { entity_id, event_id, .. }
+    let violations: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| {
+            matches!(e, ValidationError::StateViolation { entity_id, event_id, .. }
             if entity_id == "doomed_soldier" && event_id == "later_battle")
-    }).collect();
+        })
+        .collect();
 
-    assert!(!violations.is_empty(), "should catch dead actor participating in later event");
+    assert!(
+        !violations.is_empty(),
+        "should catch dead actor participating in later event"
+    );
 }
 
 // ── State violation (event at destroyed place) ─────────────
@@ -44,12 +54,19 @@ fn catches_state_violation_destroyed_place() {
     let c = Chronicle::from_directory(&data_path("state_violation")).unwrap();
     let report = c.validate();
 
-    let violations: Vec<_> = report.errors.iter().filter(|e| {
-        matches!(e, ValidationError::StateViolation { entity_id, event_id, .. }
+    let violations: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| {
+            matches!(e, ValidationError::StateViolation { entity_id, event_id, .. }
             if entity_id == "ruined_city" && event_id == "impossible_market")
-    }).collect();
+        })
+        .collect();
 
-    assert!(!violations.is_empty(), "should catch event at destroyed location");
+    assert!(
+        !violations.is_empty(),
+        "should catch event at destroyed location"
+    );
 }
 
 // ── Orphan entity ──────────────────────────────────────────
@@ -63,14 +80,20 @@ fn catches_orphan_entity() {
         matches!(w, ValidationWarning::OrphanEntity { entity_id } if entity_id == "forgotten_hermit")
     }).collect();
 
-    assert!(!orphans.is_empty(), "should warn about orphaned forgotten_hermit");
+    assert!(
+        !orphans.is_empty(),
+        "should warn about orphaned forgotten_hermit"
+    );
 
     // connected_faction should NOT be orphaned (it participates in an event)
     let false_orphans: Vec<_> = report.warnings.iter().filter(|w| {
         matches!(w, ValidationWarning::OrphanEntity { entity_id } if entity_id == "connected_faction")
     }).collect();
 
-    assert!(false_orphans.is_empty(), "connected_faction should not be orphaned");
+    assert!(
+        false_orphans.is_empty(),
+        "connected_faction should not be orphaned"
+    );
 }
 
 // ── Duplicate ID ───────────────────────────────────────────
@@ -83,5 +106,8 @@ fn catches_duplicate_id() {
         Ok(_) => panic!("should fail to load duplicate IDs"),
     };
     let msg = err.to_string();
-    assert!(msg.contains("duplicate_id"), "error should mention the duplicate ID: {msg}");
+    assert!(
+        msg.contains("duplicate_id"),
+        "error should mention the duplicate ID: {msg}"
+    );
 }

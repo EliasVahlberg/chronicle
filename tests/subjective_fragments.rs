@@ -1,8 +1,8 @@
 //! Phase 4: Subjective fragment queries (issue #4).
 
-use std::path::Path;
 use chronicle::graph::Chronicle;
 use chronicle::model::*;
+use std::path::Path;
 
 fn load() -> Chronicle {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/world");
@@ -64,11 +64,17 @@ fn filter_accounts_by_fidelity() {
     let c = load();
     let accounts = c.accounts_of("siege_of_silica");
 
-    let biased: Vec<_> = accounts.iter().filter(|a| a.fidelity == Fidelity::Biased).collect();
+    let biased: Vec<_> = accounts
+        .iter()
+        .filter(|a| a.fidelity == Fidelity::Biased)
+        .collect();
     assert_eq!(biased.len(), 1);
     assert_eq!(biased[0].source, "kaine_durgan");
 
-    let partial: Vec<_> = accounts.iter().filter(|a| a.fidelity == Fidelity::Partial).collect();
+    let partial: Vec<_> = accounts
+        .iter()
+        .filter(|a| a.fidelity == Fidelity::Partial)
+        .collect();
     assert_eq!(partial.len(), 1);
     assert_eq!(partial[0].source, "jorik_vane");
 }
@@ -80,7 +86,10 @@ fn accounts_mention_different_entities() {
     let c = load();
     let accounts = c.accounts_of("siege_of_silica");
 
-    let kaine_account = accounts.iter().find(|a| a.source == "kaine_durgan").unwrap();
+    let kaine_account = accounts
+        .iter()
+        .find(|a| a.source == "kaine_durgan")
+        .unwrap();
     let jorik_account = accounts.iter().find(|a| a.source == "jorik_vane").unwrap();
 
     let kaine_mentions: Vec<String> = chronicle::graph::parse_references(&kaine_account.text);
@@ -108,7 +117,11 @@ fn jorik_account_covers_multiple_events() {
     let jorik = &accounts[0];
     assert_eq!(jorik.event_refs.len(), 3);
     assert!(jorik.event_refs.contains(&"siege_of_silica".to_owned()));
-    assert!(jorik.event_refs.contains(&"battle_of_broken_glass".to_owned()));
+    assert!(
+        jorik
+            .event_refs
+            .contains(&"battle_of_broken_glass".to_owned())
+    );
     assert!(jorik.event_refs.contains(&"purist_uprising".to_owned()));
 }
 
@@ -122,5 +135,8 @@ fn jorik_vane_no_longer_orphan() {
         matches!(w, chronicle::validation::ValidationWarning::OrphanEntity { entity_id }
             if entity_id == "jorik_vane")
     });
-    assert!(!jorik_orphan, "jorik_vane should not be orphaned now that he has an account");
+    assert!(
+        !jorik_orphan,
+        "jorik_vane should not be orphaned now that he has an account"
+    );
 }

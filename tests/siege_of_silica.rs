@@ -1,6 +1,6 @@
-use std::path::Path;
 use chronicle::graph::Chronicle;
 use chronicle::model::*;
+use std::path::Path;
 
 fn load() -> Chronicle {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/world");
@@ -47,7 +47,9 @@ fn actor_query_kaine_durgan_events() {
 #[test]
 fn actor_query_brother_halix_events() {
     let c = load();
-    let halix = c.actor("brother_halix").expect("brother_halix should exist");
+    let halix = c
+        .actor("brother_halix")
+        .expect("brother_halix should exist");
     let events = halix.events();
     // Halix participates in purist_uprising and battle_of_broken_glass
     assert_eq!(events.len(), 2);
@@ -185,7 +187,10 @@ fn event_query_state_changes() {
     let changes = siege.state_changes();
     assert_eq!(changes.len(), 1);
     assert_eq!(changes[0].entity, "silica");
-    assert_eq!(changes[0].change, StateChange::StatusChange(Status::Destroyed));
+    assert_eq!(
+        changes[0].change,
+        StateChange::StatusChange(Status::Destroyed)
+    );
 }
 
 // ── Place queries ──────────────────────────────────────────
@@ -288,19 +293,28 @@ fn concept_loads_and_validates() {
     assert!(c.index.contains_key("null_field_technology"));
     // origin_event reference should resolve (no validation errors for it)
     let report = c.validate();
-    let concept_errors: Vec<_> = report.errors.iter().filter(|e| {
-        matches!(e, chronicle::validation::ValidationError::DanglingReference { source_id, .. }
+    let concept_errors: Vec<_> = report
+        .errors
+        .iter()
+        .filter(|e| {
+            matches!(e, chronicle::validation::ValidationError::DanglingReference { source_id, .. }
             if source_id == "null_field_technology")
-    }).collect();
+        })
+        .collect();
     assert!(concept_errors.is_empty());
 }
 
 #[test]
 fn concept_query_origin_event() {
     let c = load();
-    let nfg = c.concept("null_field_technology").expect("concept should exist");
+    let nfg = c
+        .concept("null_field_technology")
+        .expect("concept should exist");
     assert_eq!(nfg.data().name, "Null Field Generators");
-    assert_eq!(nfg.data().concept_type, chronicle::model::ConceptType::Technology);
+    assert_eq!(
+        nfg.data().concept_type,
+        chronicle::model::ConceptType::Technology
+    );
 
     let origin = nfg.origin_event().expect("should have origin event");
     assert_eq!(origin.id, "battle_of_broken_glass");

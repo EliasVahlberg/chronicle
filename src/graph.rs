@@ -8,7 +8,7 @@ use petgraph::stable_graph::{NodeIndex, StableGraph};
 
 use crate::error::ChronicleError;
 use crate::model::*;
-use crate::validation::{ValidationReport, ValidationError, validate, can_add_event};
+use crate::validation::{ValidationError, ValidationReport, can_add_event, validate};
 
 /// The core chronicle graph.
 ///
@@ -75,7 +75,11 @@ impl Chronicle {
         load_dir::<Concept>(path, "concepts", &mut graph, &mut index)?;
         load_dir::<Account>(path, "accounts", &mut graph, &mut index)?;
 
-        let mut chronicle = Self { graph, index, config };
+        let mut chronicle = Self {
+            graph,
+            index,
+            config,
+        };
         chronicle.build_edges();
         Ok(chronicle)
     }
@@ -143,11 +147,7 @@ impl Chronicle {
                     }
                 }
                 Entity::Account(account) => {
-                    edges.push((
-                        nx,
-                        account.source.clone(),
-                        Relationship::AuthoredBy,
-                    ));
+                    edges.push((nx, account.source.clone(), Relationship::AuthoredBy));
                     for ev in &account.event_refs {
                         edges.push((nx, ev.clone(), Relationship::AccountOf));
                     }
@@ -206,30 +206,60 @@ trait IntoEntity {
 }
 
 impl IntoEntity for Actor {
-    fn into_entity(self) -> Entity { Entity::Actor(self) }
+    fn into_entity(self) -> Entity {
+        Entity::Actor(self)
+    }
 }
 impl IntoEntity for Place {
-    fn into_entity(self) -> Entity { Entity::Place(self) }
+    fn into_entity(self) -> Entity {
+        Entity::Place(self)
+    }
 }
 impl IntoEntity for Event {
-    fn into_entity(self) -> Entity { Entity::Event(self) }
+    fn into_entity(self) -> Entity {
+        Entity::Event(self)
+    }
 }
 impl IntoEntity for Concept {
-    fn into_entity(self) -> Entity { Entity::Concept(self) }
+    fn into_entity(self) -> Entity {
+        Entity::Concept(self)
+    }
 }
 impl IntoEntity for Account {
-    fn into_entity(self) -> Entity { Entity::Account(self) }
+    fn into_entity(self) -> Entity {
+        Entity::Account(self)
+    }
 }
 
 trait HasId {
     fn id(&self) -> &str;
 }
 
-impl HasId for Actor { fn id(&self) -> &str { &self.id } }
-impl HasId for Place { fn id(&self) -> &str { &self.id } }
-impl HasId for Event { fn id(&self) -> &str { &self.id } }
-impl HasId for Concept { fn id(&self) -> &str { &self.id } }
-impl HasId for Account { fn id(&self) -> &str { &self.id } }
+impl HasId for Actor {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+impl HasId for Place {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+impl HasId for Event {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+impl HasId for Concept {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+impl HasId for Account {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
 
 fn load_dir<T>(
     root: &Path,
