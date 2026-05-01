@@ -1,72 +1,64 @@
-# Narrative Knowledge Graphs — Roadmap
+# chronicle-graph — Roadmap
 
 > Phased development plan. Each phase produces something usable.
 >
 > Companion to [SCOPE.md](SCOPE.md) and [PROPOSAL.md](PROPOSAL.md).
+>
+> **Crate name:** `chronicle-graph` on crates.io, `chronicle` for imports.
 
-## Phase 1 — Graph Model + Load + Validate
+## Phase 1 — Graph Model + Load + Validate ✅
 
-**Goal**: The crate exists. It loads RON files, builds a typed graph, and catches inconsistencies.
+**Completed:** `fcf2856`
 
-This is the foundation. Getting the data model right matters more than anything else. Test with a small cluster of real saltglass-steppe lore (e.g., the Siege of Silica and its surrounding events/actors/places).
-
-- Define core types: Actor, Place, Event, Concept, TimePeriod
-- Define RON schema with `{entity_id}` and `[$time_ref]` reference syntax in narrative text
+- Core types: Actor, Place, Event, Concept, Account (TimePeriod deferred)
+- RON schema with `{entity_id}` reference syntax in narrative text
 - Event metadata: participants with roles and sentiment, location, time_span, caused_by, state_changes
-- Sentiment tags per participant per event (Triumphant, Devastating, Sorrowful, Neutral, Resentful, etc.)
-- Load from directory, resolve all references, build in-memory graph
-- Referential validation: no dangling refs, no orphans
-- Temporal validation: Allen's Interval Algebra — lifespan checks, causal ordering, dead actors don't participate
-- Output: `ValidationReport` with typed errors and warnings
-- ~~Decide: petgraph vs custom adjacency structure~~ → Decided: petgraph `StableGraph`
+- Directory-based loading: type inferred from subdirectory name
+- petgraph `StableGraph` with `Entity`/`Relationship` enums, `HashMap<EntityId, NodeIndex>` index
+- 4 validation passes: referential integrity, temporal consistency (Allen's intervals), state tracking, orphan detection
+- `ValidationReport` with typed errors and warnings
+- Siege of Silica test cluster (18 entities, 5 RON files)
 
-**Done when**: A real lore cluster loads, validates, and the types feel right for authoring.
+## Phase 2 — Query API ✅
 
-## Phase 2 — Query API
-
-**Goal**: The crate is useful. Typed traversals answer real questions about the world.
+**Completed:** `fcf2856`
 
 - Query handles: `graph.actor()`, `graph.event()`, `graph.place()`, `graph.concept()`
-- Method chains: `.interactions()`, `.events_during()`, `.causal_chain()`, `.participants()`, `.participants_by_role()`
-- Sentiment queries: `.events_with_sentiment(Devastating)`, participant-level sentiment filtering
-- Subgraph extraction with depth and type filters
-- Text retrieval: `.mentions(entity_id)`, `.accounts_of(event_id)`
-- Iteration/collection: query results as iterators over typed handles
+- Method chains: `.interactions()`, `.events_during()`, `.events_at()`, `.causal_chain()`, `.consequences()`, `.participants()`, `.participants_by_role()`
+- `InteractionResult` with `.people()` and `.factions()` filters
+- `status_at(year)` — reconstructs from Active by scanning state changes
+- Text retrieval: `.mentions(entity_id)`, `.accounts_of(event_id)`, `.accounts_by(source_id)`
 
-**Done when**: A real saltglass-steppe question ("what factions were involved in events at Silica Citadel between year 800 and 900?") is answerable as a method chain.
+## Phase 3 — Insertion Verification ✅
 
-## Phase 3 — Insertion Verification
+**Completed:** `2248116`
 
-**Goal**: The crate prevents problems. New content is validated before it enters the graph.
+- `can_add_event(&Event) -> Result<(), Vec<ValidationError>>` — pure check, no mutation
+- `ValidationConfig` with configurable `terminal_statuses` (default: Dead, Destroyed, Dissolved)
+- `Chronicle::from_directory_with_config(path, config)` for custom policies
+- Actionable error messages with full context (entity IDs, event names, years, specific conflict)
+- Negative test data: dangling refs, temporal violations, state violations, orphans, duplicate IDs
 
-- `can_add(&event)` — pre-insertion consistency check against temporal, spatial, and state constraints
-- State tracking: events produce state changes (death, destruction, dissolution), future operations respect them
-- Incremental validation: don't re-validate the whole graph on every insert
-- Clear error messages: "Cannot add: actor 'kael' has status Deceased as of event 'battle_of_x' (year 835)"
+## Phase 4 — Subjective Fragments ✅
 
-**Done when**: Attempting to add an impossible event returns a specific, actionable rejection.
+**Completed:** `525e9e7`
 
-## Phase 4 — Subjective Fragments
-
-**Goal**: The crate models unreliable narrators. Different sources have different views of the same events.
-
-- Fidelity ratings on accounts: Canonical, Partial, Distorted, Biased, Fabricated, Corrupted
-- Objective graph as union of Canonical-fidelity sources
-- Subjective fragments attributed to specific sources (NPCs, books, archive-drones)
-- Divergence queries: "where does this account differ from ground truth?"
-- Per-source sentiment: the same event has different sentiment depending on who's telling it
-- Archive-drones as high-fidelity sources, NPCs as partial/biased sources
-
-**Done when**: Two conflicting accounts of the same event coexist in the graph with queryable divergence.
+- Accounts as graph nodes with `AuthoredBy`, `AccountOf`, and `Mentions` edges
+- `accounts_by(source_id)` — all accounts authored by a given source
+- Fidelity filtering by caller (Canonical, Partial, Distorted, Biased, Fabricated, Corrupted)
+- Divergence comparison via `parse_references()` — compare entity mentions between accounts
+- The Account layer is the subjective fragment; the rest of the graph is the objective truth
 
 ## Phase 5 — Saltglass-Steppe Integration
 
-**Goal**: The crate is wired into the game. Lore is structured, validated, and queryable at runtime.
+**Status:** Open
 
-- Convert a meaningful chunk of lore from markdown to RON (start with a single event cluster, not everything)
-- Wire into game systems: spawn queries, quest triggers, NPC dialogue source selection
-- CI validation step: `cargo test` fails if lore graph has consistency errors
-- Deprecate corresponding markdown lore files as they're converted
+- Establish canonical timeline (integer years for all known events)
+- Build entity ID registry (canonical IDs for all actors, places, factions)
+- Convert one lore cluster from markdown to RON (Schism Wars is the natural starting point)
+- Decide game integration pattern (direct dependency vs export)
+- Wire one game system to chronicle queries
+- CI validation step
 
 **Done when**: At least one game system queries the graph at runtime instead of hardcoded data.
 
