@@ -270,12 +270,15 @@ impl<'a> EventQuery<'a> {
         chain
     }
 
-    /// Events caused by this one (forward consequences).
+    /// Events caused by this one (forward consequences via CausedBy edges).
     pub fn consequences(&self) -> Vec<&'a Event> {
-        let my_id = &self.data().id;
-        self.chronicle.graph.node_indices()
-            .filter_map(|nx| match &self.chronicle.graph[nx] {
-                Entity::Event(e) if e.caused_by.iter().any(|c| c == my_id) => Some(e),
+        self.chronicle
+            .neighbors_by_edge(self.nx, Direction::Incoming, |r| {
+                matches!(r, Relationship::CausedBy)
+            })
+            .iter()
+            .filter_map(|&nx| match &self.chronicle.graph[nx] {
+                Entity::Event(e) => Some(e),
                 _ => None,
             })
             .collect()
