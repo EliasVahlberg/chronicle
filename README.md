@@ -1,40 +1,37 @@
 # chronicle
+[[github]](https://github.com/EliasVahlberg/chronicle)
+[[crates.io]](https://crates.io/crates/chronicle-graph)
+[[docs.rs]](https://docs.rs/chronicle-graph)
 
 Event-centric narrative knowledge graphs with temporal verification.
 
-A Rust crate for structured world-building: load authored narrative content into a typed, event-centric knowledge graph, validate it for consistency, and query it.
+Load authored world-building content into a typed knowledge graph, validate it
+for consistency, and query it. Events are the connective tissue between actors,
+places, and time — adapted from [CIDOC CRM](https://cidoc-crm.org/) (ISO 21127).
+Temporal verification uses [Allen's Interval Algebra](https://en.wikipedia.org/wiki/Allen%27s_interval_algebra).
 
-## The Problem
+```toml
+[dependencies]
+chronicle-graph = "0.1"
+```
 
-World-building for narrative-heavy games accumulates as disconnected documents that drift into inconsistency. Characters contradict themselves across files, timelines break, and AI-generated content introduces plausible-sounding details that conflict with established canon. At scale, nobody can hold the world in their head.
-
-## The Approach
-
-Replace disconnected prose with structured entity-relation graphs. Every piece of world-building — character, faction, location, event — is a typed node with explicit, validated relationships. Events are the connective tissue (adapted from [CIDOC CRM](https://cidoc-crm.org/), ISO 21127). Temporal consistency uses [Allen's Interval Algebra](https://en.wikipedia.org/wiki/Allen%27s_interval_algebra).
-
-## Usage
+## Example
 
 ```rust
 use chronicle::graph::Chronicle;
 use chronicle::model::*;
 
-// Load a world from RON files
 let graph = Chronicle::from_directory("world/".as_ref())?;
-
-// Validate consistency
 let report = graph.validate();
-for error in &report.errors {
-    eprintln!("{error}");
-}
 
 // Typed queries
 let kaine = graph.actor("kaine_durgan").unwrap();
 let events = kaine.events();
-let contacts = kaine.interactions().people();
+let contacts = kaine.interactions().factions();
 let chain = graph.event("siege_of_silica").unwrap().causal_chain();
 let status = graph.place("silica").unwrap().status_at(25); // Destroyed
 
-// Check if a proposed event is consistent
+// Verify a proposed event against the existing graph
 let proposed = Event {
     id: "new_battle".into(),
     name: "New Battle".into(),
@@ -47,90 +44,41 @@ let proposed = Event {
     description: String::new(),
 };
 match graph.can_add_event(&proposed) {
-    Ok(()) => println!("Event is consistent"),
+    Ok(()) => println!("consistent"),
     Err(errors) => {
-        for e in &errors {
-            eprintln!("{e}");
-            // "location 'silica' has status Destroyed as of 'siege_of_silica' (year 20),
-            //  cannot host proposed event 'new_battle' (year 25)"
-        }
+        for e in &errors { eprintln!("{e}"); }
+        // "location 'silica' has status Destroyed as of 'siege_of_silica' (year 20),
+        //  cannot host proposed event 'new_battle' (year 25)"
     }
 }
-
-// Subjective accounts with fidelity ratings
-let accounts = graph.accounts_of("siege_of_silica");
-for account in accounts {
-    println!("{}: {:?} fidelity", account.source, account.fidelity);
-}
 ```
 
-## Content Format
+## What it does
 
-World data is authored as RON files in a directory structure. Entity type is inferred from the subdirectory name:
+World data is authored as RON files in a directory structure. Entity type is
+inferred from the subdirectory name (`actors/*.ron` → `Vec<Actor>`, etc.).
+Narrative text uses `{entity_id}` references resolved at load time.
 
-```
-world/
-├── actors/         # Vec<Actor> — characters, factions, organizations
-├── places/         # Vec<Place> — settlements, regions, landmarks
-├── events/         # Vec<Event> — battles, discoveries, political events
-├── concepts/       # Vec<Concept> — religions, technologies, artifacts
-└── accounts/       # Vec<Account> — subjective narrative text
-```
+The graph validates: referential integrity (all IDs resolve), temporal
+consistency (lifespans contain events, causes precede effects), and state
+tracking (dead actors don't participate, destroyed places don't host events).
+Which statuses are terminal is configurable via `ValidationConfig`.
 
-Narrative text uses `{entity_id}` references:
+Accounts model unreliable narrators — each has a source and a fidelity rating
+(Canonical, Partial, Biased, Fabricated, etc.). Two conflicting accounts of the
+same event coexist with queryable divergence.
 
-```ron
-(
-    id: "kaine_siege_journal",
-    source: "kaine_durgan",
-    fidelity: Biased,
-    event_refs: ["siege_of_silica"],
-    text: "We burned {silica}. The {mirror_order} call it a massacre. We call it sanitation.",
-)
-```
+## Key concepts
 
-## Features
-
-- **Event-centric model**: All relationships pass through events (who, where, when, why)
-- **Temporal verification**: Allen's Interval Algebra catches impossible timelines
-- **State tracking**: Dead actors can't participate in future events; destroyed places can't host them
-- **Configurable policies**: `ValidationConfig` controls which statuses are terminal
-- **Subjective fragments**: Model unreliable narrators with fidelity ratings (Canonical, Partial, Biased, etc.)
-- **Typed queries**: Method chains over structured data, not natural language
-- **Insertion verification**: `can_add_event()` checks proposed records against the existing graph
-
-## Custom Validation Config
-
-```rust
-use chronicle::model::{ValidationConfig, Status};
-
-let config = ValidationConfig {
-    terminal_statuses: [Status::Dead, Status::Destroyed, Status::Dissolved, Status::Captured].into(),
-};
-let graph = Chronicle::from_directory_with_config("world/".as_ref(), config)?;
-```
-
-## Dependencies
-
-| Crate | Purpose |
-|-------|---------|
-| `petgraph` | Graph structure and traversal algorithms |
-| `allen-intervals` | Temporal consistency verification (Allen's Interval Algebra) |
-| `serde` + `ron` | Deserialization of hand-authored content |
-| `thiserror` | Error types |
-
-No async, no database, no network, no GPU.
+- **Event-centric model** — all relationships pass through events with participants, roles, sentiment, location, causality, and state changes
+- **Allen's Interval Algebra** — 13 temporal relations on discrete integer years; `strictly_before` = precedes ∨ meets
+- **ValidationConfig** — policy object controlling which statuses are terminal (default: Dead, Destroyed, Dissolved)
+- **can_add_event** — pure pre-flight check against the existing graph, no mutation
+- **Subjective fragments** — accounts with fidelity ratings, queryable by source, event, and entity mentions
 
 ## Status
 
-Phases 1–4 complete. Not yet published on crates.io.
-
-- ✅ Graph model, loading, edge construction
-- ✅ Validation (referential, temporal, state, orphan detection)
-- ✅ Typed query API (actor, event, place, concept queries)
-- ✅ Insertion verification (`can_add_event` with `ValidationConfig`)
-- ✅ Subjective fragments (accounts with fidelity ratings)
-- 🔲 Saltglass-steppe integration (first consumer)
+v0.1.0 — graph loading, validation, typed query API, insertion verification, subjective fragments. See `docs/ROADMAP.md` for the full plan.
 
 ## License
 
