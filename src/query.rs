@@ -350,25 +350,24 @@ impl<'a> PlaceQuery<'a> {
 // ── Shared helpers ─────────────────────────────────────────
 
 /// Compute status at a point in time by scanning state changes.
-/// Starts from Active and applies state changes up to the queried year.
+/// Starts from Active and applies state changes up to the queried year in chronological order.
 fn status_at_impl(chronicle: &Chronicle, entity_id: &str, year: i32) -> Status {
-    let mut status = Status::Active;
-    let mut latest_time = i32::MIN;
+    let mut changes: Vec<(i32, &Status)> = Vec::new();
 
     for nx in chronicle.graph.node_indices() {
         if let Entity::Event(event) = &chronicle.graph[nx]
             && event.time_span.end <= year
-            && event.time_span.end > latest_time
         {
             for sc in &event.state_changes {
                 if sc.entity == entity_id
                     && let StateChange::StatusChange(s) = &sc.change
                 {
-                    status = s.clone();
-                    latest_time = event.time_span.end;
+                    changes.push((event.time_span.end, s));
                 }
             }
         }
     }
-    status
+
+    changes.sort_by_key(|(time, _)| *time);
+    changes.last().map(|(_, s)| (*s).clone()).unwrap_or(Status::Active)
 }
