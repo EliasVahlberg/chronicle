@@ -56,6 +56,14 @@ impl Chronicle {
         }
     }
 
+    pub fn concept(&self, id: &str) -> Option<ConceptQuery<'_>> {
+        let &nx = self.index.get(id)?;
+        match &self.graph[nx] {
+            Entity::Concept(_) => Some(ConceptQuery { chronicle: self, nx }),
+            _ => None,
+        }
+    }
+
     /// All accounts whose text contains a `{entity_id}` reference to this entity.
     pub fn mentions(&self, entity_id: &str) -> Vec<&Account> {
         let Some(&target_nx) = self.index.get(entity_id) else { return vec![] };
@@ -347,6 +355,32 @@ impl<'a> PlaceQuery<'a> {
     /// Status at a given point in time.
     pub fn status_at(&self, year: i32) -> Status {
         status_at_impl(self.chronicle, &self.data().id, year)
+    }
+}
+
+// ── ConceptQuery ───────────────────────────────────────────
+
+pub struct ConceptQuery<'a> {
+    chronicle: &'a Chronicle,
+    nx: NodeIndex,
+}
+
+impl<'a> ConceptQuery<'a> {
+    pub fn data(&self) -> &'a Concept {
+        match &self.chronicle.graph[self.nx] {
+            Entity::Concept(c) => c,
+            _ => unreachable!(),
+        }
+    }
+
+    /// The event that originated this concept, if any.
+    pub fn origin_event(&self) -> Option<&'a Event> {
+        let origin_id = self.data().origin_event.as_ref()?;
+        let &nx = self.chronicle.index.get(origin_id.as_str())?;
+        match &self.chronicle.graph[nx] {
+            Entity::Event(e) => Some(e),
+            _ => None,
+        }
     }
 }
 

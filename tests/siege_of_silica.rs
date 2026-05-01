@@ -294,3 +294,14 @@ fn concept_loads_and_validates() {
     }).collect();
     assert!(concept_errors.is_empty());
 }
+
+#[test]
+fn concept_query_origin_event() {
+    let c = load();
+    let nfg = c.concept("null_field_technology").expect("concept should exist");
+    assert_eq!(nfg.data().name, "Null Field Generators");
+    assert_eq!(nfg.data().concept_type, chronicle::model::ConceptType::Technology);
+
+    let origin = nfg.origin_event().expect("should have origin event");
+    assert_eq!(origin.id, "battle_of_broken_glass");
+}
