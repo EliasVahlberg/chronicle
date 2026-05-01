@@ -10,41 +10,77 @@ use crate::model::*;
 
 // ── Report types ───────────────────────────────────────────
 
+/// The result of running all validation passes over a [`Chronicle`].
+///
+/// Contains collected errors (hard violations that indicate inconsistent data)
+/// and warnings (soft issues like orphan entities that may be intentional).
 #[derive(Debug, Default)]
 pub struct ValidationReport {
+    /// Hard validation failures: dangling references, temporal impossibilities,
+    /// and state violations (e.g. a dead actor participating in a future event).
     pub errors: Vec<ValidationError>,
+    /// Soft issues that do not necessarily indicate broken data, such as
+    /// entities with no incoming or outgoing relationships.
     pub warnings: Vec<ValidationWarning>,
 }
 
 impl ValidationReport {
+    /// Returns `true` if no errors were found. Warnings alone do not cause this to return `false`.
     pub fn is_ok(&self) -> bool {
         self.errors.is_empty()
     }
 }
 
+/// A hard validation error indicating inconsistent world data.
 #[derive(Debug)]
 pub enum ValidationError {
+    /// A reference from one entity to another that does not exist in the graph.
     DanglingReference {
+        /// The ID of the entity that contains the broken reference.
         source_id: String,
+        /// The ID that was referenced but not found in the graph.
         target_id: String,
+        /// Human-readable label for the kind of reference (e.g. `"location"`, `"participant"`).
         context: String,
     },
+    /// A temporal impossibility detected via Allen's Interval Algebra — for example,
+    /// an event occurring before a participant's lifespan or after a cause.
     TemporalViolation {
+        /// The ID of the entity whose timeline is violated (actor or event).
         entity_id: String,
+        /// The ID of the event involved in the violation.
         event_id: String,
+        /// Human-readable explanation of the temporal conflict.
         description: String,
     },
+    /// An entity is used in an event despite having a terminal status
+    /// (e.g. `Dead`, `Destroyed`) from a strictly earlier event.
     StateViolation {
+        /// The ID of the entity in a terminal state.
         entity_id: String,
+        /// The ID of the event that illegally references the terminal entity.
         event_id: String,
+        /// Human-readable explanation including the terminal status and the events involved.
         description: String,
     },
 }
 
+/// A soft validation warning that does not indicate broken data but may
+/// signal authoring oversights.
 #[derive(Debug)]
 pub enum ValidationWarning {
-    OrphanEntity { entity_id: String },
-    TemporalAmbiguity { description: String },
+    /// An entity with zero incoming and zero outgoing edges — it is completely
+    /// disconnected from the rest of the graph.
+    OrphanEntity {
+        /// The ID of the disconnected entity.
+        entity_id: String,
+    },
+    /// A temporal relationship that is ambiguous (e.g. overlapping intervals
+    /// where strict ordering was expected) but not provably wrong.
+    TemporalAmbiguity {
+        /// Human-readable explanation of the ambiguous temporal relationship.
+        description: String,
+    },
 }
 
 impl fmt::Display for ValidationError {
@@ -78,6 +114,15 @@ impl fmt::Display for ValidationWarning {
 
 // ── Validation entry point ─────────────────────────────────
 
+/// Run all four validation passes over the given [`Chronicle`] and return a [`ValidationReport`].
+///
+/// The passes, executed in order, are:
+/// 1. **Referential integrity** — every ID referenced by an entity must exist in the graph.
+/// 2. **Temporal consistency** — participant lifespans and causal ordering are checked
+///    using Allen's Interval Algebra.
+/// 3. **State tracking** — entities with terminal statuses (per [`ValidationConfig`]) cannot
+///    appear in events that occur strictly after the status-changing event.
+/// 4. **Orphan detection** — entities with no edges in either direction produce warnings.
 pub fn validate(chronicle: &Chronicle) -> ValidationReport {
     let mut report = ValidationReport::default();
     validate_referential(chronicle, &mut report);
@@ -325,8 +370,13 @@ fn collect_state_changes(chronicle: &Chronicle) -> Vec<(String, Status, TimeSpan
 
 // ── can_add_event ──────────────────────────────────────────
 
-/// Check whether a proposed event is consistent with the existing graph.
-/// Returns Ok(()) if the event can be added, or Err with all detected violations.
+/// Check whether a proposed [`Event`] is consistent with the existing graph.
+///
+/// Runs referential, temporal, and state checks against the current [`Chronicle`]
+/// without modifying it. This is the pre-flight check for inserting new narrative content.
+///
+/// Returns `Ok(())` if the event can be safely added, or `Err` containing every
+/// detected [`ValidationError`] (the list is exhaustive, not short-circuited).
 pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<ValidationError>> {
     let mut errors = Vec::new();
 

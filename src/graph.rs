@@ -11,19 +11,57 @@ use crate::model::*;
 use crate::validation::{ValidationReport, ValidationError, validate, can_add_event};
 
 /// The core chronicle graph.
+///
+/// Holds a heterogeneous [`StableGraph`] of [`Entity`] nodes connected by
+/// [`Relationship`] edges, plus a string-to-index lookup map and a
+/// [`ValidationConfig`] that governs policy decisions such as which statuses
+/// are considered terminal.
+///
+/// Construct via [`Chronicle::from_directory`] (default config) or
+/// [`Chronicle::from_directory_with_config`] (custom config). Both load every
+/// `.ron` file under the conventional subdirectory layout (`actors/`, `places/`,
+/// `events/`, `concepts/`, `accounts/`), insert nodes, and wire up edges in a
+/// single pass.
 pub struct Chronicle {
+    /// The underlying directed graph. Nodes are [`Entity`] variants; edges are
+    /// [`Relationship`] variants that encode the kind and, where applicable,
+    /// the payload (role, sentiment, state-change) of each connection.
     pub graph: StableGraph<Entity, Relationship>,
+
+    /// Maps every entity's string id to its [`NodeIndex`] in the graph,
+    /// providing O(1) lookup by id.
     pub index: HashMap<String, NodeIndex>,
+
+    /// Policy configuration used during validation — controls which
+    /// [`Status`] values are treated as terminal (e.g. `Dead`, `Destroyed`).
     pub config: ValidationConfig,
 }
 
 impl Chronicle {
     /// Load all RON files from a directory, build the graph with default config.
+    ///
+    /// Equivalent to calling [`from_directory_with_config`](Self::from_directory_with_config)
+    /// with [`ValidationConfig::default()`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ChronicleError`] on I/O failures, RON parse errors, or
+    /// duplicate entity ids across files.
     pub fn from_directory(path: &Path) -> Result<Self, ChronicleError> {
         Self::from_directory_with_config(path, ValidationConfig::default())
     }
 
-    /// Load all RON files from a directory with custom validation config.
+    /// Load all RON files from a directory with a custom [`ValidationConfig`].
+    ///
+    /// Walks the conventional subdirectories (`actors/`, `places/`, `events/`,
+    /// `concepts/`, `accounts/`), deserialises every `.ron` file into the
+    /// corresponding entity type, inserts nodes, and then builds all edges in
+    /// a separate pass via `build_edges`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ChronicleError`] on I/O failures, RON parse errors, or
+    /// duplicate entity ids.
     pub fn from_directory_with_config(
         path: &Path,
         config: ValidationConfig,
@@ -42,12 +80,19 @@ impl Chronicle {
         Ok(chronicle)
     }
 
-    /// Validate the graph and return a report.
+    /// Run all validation passes and return a [`ValidationReport`].
+    ///
+    /// The report aggregates referential-integrity, temporal-consistency,
+    /// state-validity, and orphan-detection errors found in the graph.
     pub fn validate(&self) -> ValidationReport {
         validate(self)
     }
 
-    /// Check whether a proposed event is consistent with the existing graph.
+    /// Check whether a proposed [`Event`] is consistent with the existing graph.
+    ///
+    /// Returns `Ok(())` if the event can be inserted without violating any
+    /// temporal or state constraints. Returns `Err` with a list of
+    /// [`ValidationError`]s describing every conflict found.
     pub fn can_add_event(&self, event: &Event) -> Result<(), Vec<ValidationError>> {
         can_add_event(self, event)
     }
@@ -127,7 +172,19 @@ impl Chronicle {
     }
 }
 
-/// Parse `{entity_id}` references from account text.
+/// Extract `{entity_id}` references from account text.
+///
+/// Scans `text` for brace-delimited identifiers (e.g. `{silica}`) and returns
+/// the collected ids as a `Vec<String>`. Empty braces (`{}`) are ignored.
+///
+/// # Examples
+///
+/// ```
+/// use chronicle::graph::parse_references;
+///
+/// let refs = parse_references("We burned {silica}. The {mirror_order} call it a massacre.");
+/// assert_eq!(refs, vec!["silica".to_string(), "mirror_order".to_string()]);
+/// ```
 pub fn parse_references(text: &str) -> Vec<String> {
     let mut refs = Vec::new();
     let mut chars = text.chars().peekable();

@@ -32,6 +32,9 @@ impl Chronicle {
 // ── Entry points on Chronicle ──────────────────────────────
 
 impl Chronicle {
+    /// Look up an actor by id and return a query handle for it.
+    ///
+    /// Returns `None` if the id does not exist or does not refer to an [`Actor`].
     pub fn actor(&self, id: &str) -> Option<ActorQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
@@ -40,6 +43,9 @@ impl Chronicle {
         }
     }
 
+    /// Look up an event by id and return a query handle for it.
+    ///
+    /// Returns `None` if the id does not exist or does not refer to an [`Event`].
     pub fn event(&self, id: &str) -> Option<EventQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
@@ -48,6 +54,9 @@ impl Chronicle {
         }
     }
 
+    /// Look up a place by id and return a query handle for it.
+    ///
+    /// Returns `None` if the id does not exist or does not refer to a [`Place`].
     pub fn place(&self, id: &str) -> Option<PlaceQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
@@ -56,6 +65,9 @@ impl Chronicle {
         }
     }
 
+    /// Look up a concept by id and return a query handle for it.
+    ///
+    /// Returns `None` if the id does not exist or does not refer to a [`Concept`].
     pub fn concept(&self, id: &str) -> Option<ConceptQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
@@ -115,12 +127,17 @@ impl Chronicle {
 
 // ── ActorQuery ─────────────────────────────────────────────
 
+/// Query handle for an [`Actor`] node in the chronicle graph.
+///
+/// Provides methods to inspect the actor's data, events, interactions,
+/// and computed status at a point in time.
 pub struct ActorQuery<'a> {
     chronicle: &'a Chronicle,
     nx: NodeIndex,
 }
 
 impl<'a> ActorQuery<'a> {
+    /// Returns a reference to the underlying [`Actor`] data.
     pub fn data(&self) -> &'a Actor {
         match &self.chronicle.graph[self.nx] {
             Entity::Actor(a) => a,
@@ -182,19 +199,24 @@ impl<'a> ActorQuery<'a> {
 
 // ── InteractionResult ──────────────────────────────────────
 
+/// The result of an actor interaction query, containing the set of
+/// co-participating actors discovered across shared events.
 pub struct InteractionResult<'a> {
     actors: Vec<&'a Actor>,
 }
 
 impl<'a> InteractionResult<'a> {
+    /// Returns all co-participating actors as a slice.
     pub fn all(&self) -> &[&'a Actor] {
         &self.actors
     }
 
+    /// Returns only actors of type [`ActorType::Character`].
     pub fn people(&self) -> Vec<&'a Actor> {
         self.actors.iter().filter(|a| a.actor_type == ActorType::Character).copied().collect()
     }
 
+    /// Returns only actors of type [`ActorType::Faction`].
     pub fn factions(&self) -> Vec<&'a Actor> {
         self.actors.iter().filter(|a| a.actor_type == ActorType::Faction).copied().collect()
     }
@@ -202,12 +224,17 @@ impl<'a> InteractionResult<'a> {
 
 // ── EventQuery ─────────────────────────────────────────────
 
+/// Query handle for an [`Event`] node in the chronicle graph.
+///
+/// Provides methods to inspect participants, location, causal chains,
+/// consequences, and state changes.
 pub struct EventQuery<'a> {
     chronicle: &'a Chronicle,
     nx: NodeIndex,
 }
 
 impl<'a> EventQuery<'a> {
+    /// Returns a reference to the underlying [`Event`] data.
     pub fn data(&self) -> &'a Event {
         match &self.chronicle.graph[self.nx] {
             Entity::Event(e) => e,
@@ -300,12 +327,17 @@ impl<'a> EventQuery<'a> {
 
 // ── PlaceQuery ─────────────────────────────────────────────
 
+/// Query handle for a [`Place`] node in the chronicle graph.
+///
+/// Provides methods to inspect events at this location, actors present
+/// at a point in time, and computed status.
 pub struct PlaceQuery<'a> {
     chronicle: &'a Chronicle,
     nx: NodeIndex,
 }
 
 impl<'a> PlaceQuery<'a> {
+    /// Returns a reference to the underlying [`Place`] data.
     pub fn data(&self) -> &'a Place {
         match &self.chronicle.graph[self.nx] {
             Entity::Place(p) => p,
@@ -360,12 +392,16 @@ impl<'a> PlaceQuery<'a> {
 
 // ── ConceptQuery ───────────────────────────────────────────
 
+/// Query handle for a [`Concept`] node in the chronicle graph.
+///
+/// Provides methods to inspect the concept's data and its origin event.
 pub struct ConceptQuery<'a> {
     chronicle: &'a Chronicle,
     nx: NodeIndex,
 }
 
 impl<'a> ConceptQuery<'a> {
+    /// Returns a reference to the underlying [`Concept`] data.
     pub fn data(&self) -> &'a Concept {
         match &self.chronicle.graph[self.nx] {
             Entity::Concept(c) => c,

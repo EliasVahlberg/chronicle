@@ -7,6 +7,7 @@ license = "MIT"
 repository = "https://github.com/EliasVahlberg/chronicle"
 keywords = ["narrative", "knowledge-graph", "world-building", "temporal", "lore"]
 categories = ["data-structures", "game-development"]
+exclude = [".kiro/", ".agents/", "docs/"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
