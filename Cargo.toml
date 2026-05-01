@@ -1,5 +1,5 @@
 [package]
-name = "chronicle"
+name = "chronicle-graph"
 version = "0.1.0"
 edition = "2024"
 description = "Event-centric narrative knowledge graphs with temporal verification"
@@ -8,6 +8,9 @@ repository = "https://github.com/EliasVahlberg/chronicle"
 keywords = ["narrative", "knowledge-graph", "world-building", "temporal", "lore"]
 categories = ["data-structures", "game-development"]
 exclude = [".kiro/", ".agents/", "docs/"]
+
+[lib]
+name = "chronicle"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
