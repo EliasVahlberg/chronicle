@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-use std::path::Path;
 use chronicle::graph::Chronicle;
 use chronicle::model::*;
 use chronicle::validation::ValidationError;
+use std::collections::HashSet;
+use std::path::Path;
 
 fn load() -> Chronicle {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/world");
@@ -47,8 +47,10 @@ fn rejects_duplicate_id() {
     let c = load();
     let event = make_event("siege_of_silica", 30, 30);
     let errs = c.can_add_event(&event).unwrap_err();
-    assert!(errs.iter().any(|e| matches!(e, ValidationError::DanglingReference { context, .. }
-        if context.contains("same ID"))));
+    assert!(errs.iter().any(
+        |e| matches!(e, ValidationError::DanglingReference { context, .. }
+        if context.contains("same ID"))
+    ));
 }
 
 // ── Dangling references ────────────────────────────────────
@@ -143,7 +145,13 @@ fn allows_captured_actor_by_default() {
 fn custom_config_captured_is_terminal() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/world");
     let config = ValidationConfig {
-        terminal_statuses: [Status::Dead, Status::Destroyed, Status::Dissolved, Status::Captured].into(),
+        terminal_statuses: [
+            Status::Dead,
+            Status::Destroyed,
+            Status::Dissolved,
+            Status::Captured,
+        ]
+        .into(),
     };
     let c = Chronicle::from_directory_with_config(&path, config).unwrap();
 
@@ -191,7 +199,11 @@ fn collects_all_errors_not_just_first() {
 
     let errs = c.can_add_event(&event).unwrap_err();
     // Should have at least 3 errors: dangling location, participant, and caused_by
-    assert!(errs.len() >= 3, "expected at least 3 errors, got {}", errs.len());
+    assert!(
+        errs.len() >= 3,
+        "expected at least 3 errors, got {}",
+        errs.len()
+    );
 }
 
 // ── Error messages are actionable ──────────────────────────
@@ -208,7 +220,10 @@ fn error_messages_contain_full_context() {
     // Should mention: the entity, the status, the causing event, years
     assert!(msg.contains("silica"), "should mention entity: {msg}");
     assert!(msg.contains("Destroyed"), "should mention status: {msg}");
-    assert!(msg.contains("siege_of_silica"), "should mention causing event: {msg}");
+    assert!(
+        msg.contains("siege_of_silica"),
+        "should mention causing event: {msg}"
+    );
     assert!(msg.contains("20"), "should mention year: {msg}");
     assert!(msg.contains("25"), "should mention proposed year: {msg}");
 }

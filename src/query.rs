@@ -38,7 +38,10 @@ impl Chronicle {
     pub fn actor(&self, id: &str) -> Option<ActorQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
-            Entity::Actor(_) => Some(ActorQuery { chronicle: self, nx }),
+            Entity::Actor(_) => Some(ActorQuery {
+                chronicle: self,
+                nx,
+            }),
             _ => None,
         }
     }
@@ -49,7 +52,10 @@ impl Chronicle {
     pub fn event(&self, id: &str) -> Option<EventQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
-            Entity::Event(_) => Some(EventQuery { chronicle: self, nx }),
+            Entity::Event(_) => Some(EventQuery {
+                chronicle: self,
+                nx,
+            }),
             _ => None,
         }
     }
@@ -60,7 +66,10 @@ impl Chronicle {
     pub fn place(&self, id: &str) -> Option<PlaceQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
-            Entity::Place(_) => Some(PlaceQuery { chronicle: self, nx }),
+            Entity::Place(_) => Some(PlaceQuery {
+                chronicle: self,
+                nx,
+            }),
             _ => None,
         }
     }
@@ -71,14 +80,19 @@ impl Chronicle {
     pub fn concept(&self, id: &str) -> Option<ConceptQuery<'_>> {
         let &nx = self.index.get(id)?;
         match &self.graph[nx] {
-            Entity::Concept(_) => Some(ConceptQuery { chronicle: self, nx }),
+            Entity::Concept(_) => Some(ConceptQuery {
+                chronicle: self,
+                nx,
+            }),
             _ => None,
         }
     }
 
     /// All accounts whose text contains a `{entity_id}` reference to this entity.
     pub fn mentions(&self, entity_id: &str) -> Vec<&Account> {
-        let Some(&target_nx) = self.index.get(entity_id) else { return vec![] };
+        let Some(&target_nx) = self.index.get(entity_id) else {
+            return vec![];
+        };
         let mut seen = HashSet::new();
         self.neighbors_by_edge(target_nx, Direction::Incoming, |r| {
             matches!(r, Relationship::Mentions)
@@ -94,7 +108,9 @@ impl Chronicle {
 
     /// All accounts that reference this event (via AccountOf edges).
     pub fn accounts_of(&self, event_id: &str) -> Vec<&Account> {
-        let Some(&target_nx) = self.index.get(event_id) else { return vec![] };
+        let Some(&target_nx) = self.index.get(event_id) else {
+            return vec![];
+        };
         let mut seen = HashSet::new();
         self.neighbors_by_edge(target_nx, Direction::Incoming, |r| {
             matches!(r, Relationship::AccountOf)
@@ -110,7 +126,9 @@ impl Chronicle {
 
     /// All accounts authored by a given source.
     pub fn accounts_by(&self, source_id: &str) -> Vec<&Account> {
-        let Some(&source_nx) = self.index.get(source_id) else { return vec![] };
+        let Some(&source_nx) = self.index.get(source_id) else {
+            return vec![];
+        };
         let mut seen = HashSet::new();
         self.neighbors_by_edge(source_nx, Direction::Incoming, |r| {
             matches!(r, Relationship::AuthoredBy)
@@ -213,12 +231,20 @@ impl<'a> InteractionResult<'a> {
 
     /// Returns only actors of type [`ActorType::Character`].
     pub fn people(&self) -> Vec<&'a Actor> {
-        self.actors.iter().filter(|a| a.actor_type == ActorType::Character).copied().collect()
+        self.actors
+            .iter()
+            .filter(|a| a.actor_type == ActorType::Character)
+            .copied()
+            .collect()
     }
 
     /// Returns only actors of type [`ActorType::Faction`].
     pub fn factions(&self) -> Vec<&'a Actor> {
-        self.actors.iter().filter(|a| a.actor_type == ActorType::Faction).copied().collect()
+        self.actors
+            .iter()
+            .filter(|a| a.actor_type == ActorType::Faction)
+            .copied()
+            .collect()
     }
 }
 
@@ -249,7 +275,11 @@ impl<'a> EventQuery<'a> {
 
     /// Participants filtered by role.
     pub fn participants_by_role(&self, role: Role) -> Vec<&'a Participant> {
-        self.data().participants.iter().filter(|p| p.role == role).collect()
+        self.data()
+            .participants
+            .iter()
+            .filter(|p| p.role == role)
+            .collect()
     }
 
     /// The location of this event, if any.
@@ -442,5 +472,8 @@ fn status_at_impl(chronicle: &Chronicle, entity_id: &str, year: i32) -> Status {
     }
 
     changes.sort_by_key(|(time, _)| *time);
-    changes.last().map(|(_, s)| (*s).clone()).unwrap_or(Status::Active)
+    changes
+        .last()
+        .map(|(_, s)| (*s).clone())
+        .unwrap_or(Status::Active)
 }

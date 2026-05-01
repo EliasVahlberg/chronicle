@@ -86,14 +86,35 @@ pub enum ValidationWarning {
 impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::DanglingReference { source_id, target_id, context } => {
-                write!(f, "dangling reference: {source_id} -> {target_id} ({context})")
+            Self::DanglingReference {
+                source_id,
+                target_id,
+                context,
+            } => {
+                write!(
+                    f,
+                    "dangling reference: {source_id} -> {target_id} ({context})"
+                )
             }
-            Self::TemporalViolation { entity_id, event_id, description } => {
-                write!(f, "temporal violation: {entity_id} in {event_id}: {description}")
+            Self::TemporalViolation {
+                entity_id,
+                event_id,
+                description,
+            } => {
+                write!(
+                    f,
+                    "temporal violation: {entity_id} in {event_id}: {description}"
+                )
             }
-            Self::StateViolation { entity_id, event_id, description } => {
-                write!(f, "state violation: {entity_id} in {event_id}: {description}")
+            Self::StateViolation {
+                entity_id,
+                event_id,
+                description,
+            } => {
+                write!(
+                    f,
+                    "state violation: {entity_id} in {event_id}: {description}"
+                )
             }
         }
     }
@@ -165,7 +186,13 @@ fn validate_referential(chronicle: &Chronicle, report: &mut ValidationReport) {
                     check_ref(chronicle, &event.id, &p.actor, "participant", report);
                 }
                 for sc in &event.state_changes {
-                    check_ref(chronicle, &event.id, &sc.entity, "state_change target", report);
+                    check_ref(
+                        chronicle,
+                        &event.id,
+                        &sc.entity,
+                        "state_change target",
+                        report,
+                    );
                 }
             }
             Entity::Concept(concept) => {
@@ -206,7 +233,12 @@ fn check_ref(
 
 fn to_interval(ts: &TimeSpan) -> Option<NonEmpty<Interval<i32>>> {
     // TimeSpan uses inclusive bounds; Allen's discrete intervals use exclusive end.
-    Interval { start: ts.start, end: ts.end + 1 }.try_into().ok()
+    Interval {
+        start: ts.start,
+        end: ts.end + 1,
+    }
+    .try_into()
+    .ok()
 }
 
 /// True if interval `a` ends strictly before `b` starts (precedes or meets in Allen's algebra).
@@ -217,7 +249,9 @@ fn strictly_before(a: &NonEmpty<Interval<i32>>, b: &NonEmpty<Interval<i32>>) -> 
 fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
     for nx in chronicle.graph.node_indices() {
         if let Entity::Event(event) = &chronicle.graph[nx] {
-            let Some(event_iv) = to_interval(&event.time_span) else { continue };
+            let Some(event_iv) = to_interval(&event.time_span) else {
+                continue;
+            };
 
             // Check participants' lifespans
             for p in &event.participants {
@@ -232,8 +266,10 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                             event_id: event.id.clone(),
                             description: format!(
                                 "event at {}-{} precedes actor lifespan {}-{}",
-                                event.time_span.start, event.time_span.end,
-                                lifespan.start, lifespan.end,
+                                event.time_span.start,
+                                event.time_span.end,
+                                lifespan.start,
+                                lifespan.end,
                             ),
                         });
                     }
@@ -243,8 +279,10 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                             event_id: event.id.clone(),
                             description: format!(
                                 "actor lifespan {}-{} ends before event at {}-{}",
-                                lifespan.start, lifespan.end,
-                                event.time_span.start, event.time_span.end,
+                                lifespan.start,
+                                lifespan.end,
+                                event.time_span.start,
+                                event.time_span.end,
                             ),
                         });
                     }
@@ -263,8 +301,10 @@ fn validate_temporal(chronicle: &Chronicle, report: &mut ValidationReport) {
                         event_id: cause_event.id.clone(),
                         description: format!(
                             "effect {}-{} precedes its cause {}-{}",
-                            event.time_span.start, event.time_span.end,
-                            cause_event.time_span.start, cause_event.time_span.end,
+                            event.time_span.start,
+                            event.time_span.end,
+                            cause_event.time_span.start,
+                            cause_event.time_span.end,
                         ),
                     });
                     // cause precedes/meets effect = valid; overlap/equal = ambiguous, not error
@@ -281,7 +321,9 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
 
     for nx in chronicle.graph.node_indices() {
         if let Entity::Event(event) = &chronicle.graph[nx] {
-            let Some(event_iv) = to_interval(&event.time_span) else { continue };
+            let Some(event_iv) = to_interval(&event.time_span) else {
+                continue;
+            };
 
             // Check participants aren't in a terminal state from a strictly earlier event
             for p in &event.participants {
@@ -297,9 +339,14 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
                             description: format!(
                                 "actor '{}' has status {:?} as of '{}' (year {}-{}), \
                                  cannot participate in '{}' (year {}-{})",
-                                p.actor, status, change_event_id,
-                                change_time.start, change_time.end,
-                                event.id, event.time_span.start, event.time_span.end,
+                                p.actor,
+                                status,
+                                change_event_id,
+                                change_time.start,
+                                change_time.end,
+                                event.id,
+                                event.time_span.start,
+                                event.time_span.end,
                             ),
                         });
                     }
@@ -320,9 +367,14 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
                             description: format!(
                                 "location '{}' has status {:?} as of '{}' (year {}-{}), \
                                  cannot host '{}' (year {}-{})",
-                                loc, status, change_event_id,
-                                change_time.start, change_time.end,
-                                event.id, event.time_span.start, event.time_span.end,
+                                loc,
+                                status,
+                                change_event_id,
+                                change_time.start,
+                                change_time.end,
+                                event.id,
+                                event.time_span.start,
+                                event.time_span.end,
                             ),
                         });
                     }
@@ -336,8 +388,14 @@ fn validate_state(chronicle: &Chronicle, config: &ValidationConfig, report: &mut
 
 fn validate_orphans(chronicle: &Chronicle, report: &mut ValidationReport) {
     for nx in chronicle.graph.node_indices() {
-        let in_deg = chronicle.graph.neighbors_directed(nx, Direction::Incoming).count();
-        let out_deg = chronicle.graph.neighbors_directed(nx, Direction::Outgoing).count();
+        let in_deg = chronicle
+            .graph
+            .neighbors_directed(nx, Direction::Incoming)
+            .count();
+        let out_deg = chronicle
+            .graph
+            .neighbors_directed(nx, Direction::Outgoing)
+            .count();
         if in_deg == 0 && out_deg == 0 {
             report.warnings.push(ValidationWarning::OrphanEntity {
                 entity_id: chronicle.graph[nx].id().to_owned(),
@@ -385,7 +443,10 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
         errors.push(ValidationError::DanglingReference {
             source_id: event.id.clone(),
             target_id: event.id.clone(),
-            context: format!("proposed event '{}' has the same ID as an existing entity", event.id),
+            context: format!(
+                "proposed event '{}' has the same ID as an existing entity",
+                event.id
+            ),
         });
     }
 
@@ -441,8 +502,12 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                         event_id: event.id.clone(),
                         description: format!(
                             "proposed event '{}' (year {}-{}) precedes actor '{}' lifespan ({}-{})",
-                            event.id, event.time_span.start, event.time_span.end,
-                            actor.id, lifespan.start, lifespan.end,
+                            event.id,
+                            event.time_span.start,
+                            event.time_span.end,
+                            actor.id,
+                            lifespan.start,
+                            lifespan.end,
                         ),
                     });
                 }
@@ -472,8 +537,12 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                     event_id: cause_event.id.clone(),
                     description: format!(
                         "proposed event '{}' (year {}-{}) precedes its cause '{}' (year {}-{})",
-                        event.id, event.time_span.start, event.time_span.end,
-                        cause_event.id, cause_event.time_span.start, cause_event.time_span.end,
+                        event.id,
+                        event.time_span.start,
+                        event.time_span.end,
+                        cause_event.id,
+                        cause_event.time_span.start,
+                        cause_event.time_span.end,
                     ),
                 });
             }
@@ -495,9 +564,14 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                         description: format!(
                             "actor '{}' has status {:?} as of '{}' (year {}-{}), \
                              cannot participate in proposed event '{}' (year {}-{})",
-                            p.actor, status, change_event_id,
-                            change_time.start, change_time.end,
-                            event.id, event.time_span.start, event.time_span.end,
+                            p.actor,
+                            status,
+                            change_event_id,
+                            change_time.start,
+                            change_time.end,
+                            event.id,
+                            event.time_span.start,
+                            event.time_span.end,
                         ),
                     });
                 }
@@ -517,9 +591,14 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
                         description: format!(
                             "location '{}' has status {:?} as of '{}' (year {}-{}), \
                              cannot host proposed event '{}' (year {}-{})",
-                            loc, status, change_event_id,
-                            change_time.start, change_time.end,
-                            event.id, event.time_span.start, event.time_span.end,
+                            loc,
+                            status,
+                            change_event_id,
+                            change_time.start,
+                            change_time.end,
+                            event.id,
+                            event.time_span.start,
+                            event.time_span.end,
                         ),
                     });
                 }
@@ -527,5 +606,9 @@ pub fn can_add_event(chronicle: &Chronicle, event: &Event) -> Result<(), Vec<Val
         }
     }
 
-    if errors.is_empty() { Ok(()) } else { Err(errors) }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
 }
